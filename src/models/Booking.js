@@ -1,16 +1,7 @@
 const mongoose = require("mongoose");
 
-/**
- * Booking Schema - Professional Meeting Room Booking Management
- * 
- * This schema defines the structure for meeting room bookings in the ESS MRBS.
- * Strict validation prevents overlapping bookings.
- */
 const BookingSchema = new mongoose.Schema(
   {
-    /**
-     * Room Reference - Which room is booked
-     */
     room: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Room",
@@ -18,9 +9,6 @@ const BookingSchema = new mongoose.Schema(
       index: true
     },
 
-    /**
-     * Meeting Date & Time
-     */
     meetingDate: {
       type: Date,
       required: [true, "Meeting date is required"],
@@ -57,10 +45,6 @@ const BookingSchema = new mongoose.Schema(
       ]
       // REMOVED: Business hours validation (8:00 AM - 8:00 PM restriction)
     },
-
-    /**
-     * Booked By - User who created the booking
-     */
     scheduledBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -68,9 +52,6 @@ const BookingSchema = new mongoose.Schema(
       index: true
     },
 
-    /**
-     * Meeting Details
-     */
     numberOfGuests: {
       type: Number,
       required: [true, "Number of guests is required"],
@@ -84,10 +65,6 @@ const BookingSchema = new mongoose.Schema(
       default: false,
       index: true
     },
-
-    /**
-     * Additional Information
-     */
     notes: {
       type: String,
       trim: true,
@@ -95,9 +72,6 @@ const BookingSchema = new mongoose.Schema(
       default: ""
     },
 
-    /**
-     * Booking Status
-     */
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected', 'cancelled'],
@@ -112,17 +86,10 @@ const BookingSchema = new mongoose.Schema(
   }
 );
 
-/**
- * Indexes for optimal query performance
- */
 BookingSchema.index({ meetingDate: 1, startTime: 1, endTime: 1 });
 BookingSchema.index({ room: 1, meetingDate: 1 });
 BookingSchema.index({ scheduledBy: 1 });
 BookingSchema.index({ createdAt: -1 });
-
-/**
- * Pre-save middleware - Validate time range and business rules
- */
 BookingSchema.pre("save", async function (next) {
   try {
     // Validate start time is before end time
@@ -142,17 +109,11 @@ BookingSchema.pre("save", async function (next) {
       throw new Error("Meeting duration must be at least 15 minutes");
     }
 
-    // REMOVED: Maximum booking duration is 8 hours (no limit anymore)
-
     next();
   } catch (error) {
     next(error);
   }
 });
-
-/**
- * Pre-save middleware - Check for overlapping bookings
- */
 BookingSchema.pre("save", async function (next) {
   try {
     // Skip overlap check if this is a status update only
@@ -188,22 +149,10 @@ BookingSchema.pre("save", async function (next) {
   }
 });
 
-/**
- * Pre-find middleware - Exclude cancelled/rejected bookings by default
- */
 BookingSchema.pre(/^find/, function(next) {
-  // Uncomment if you want to exclude cancelled/rejected by default
-  // this.where({ status: { $nin: ['cancelled', 'rejected'] } });
   next();
 });
 
-/**
- * Instance Methods
- */
-
-/**
- * Get meeting duration in minutes
- */
 BookingSchema.methods.getDurationMinutes = function () {
   if (!this.startTime || !this.endTime) return 0;
   const startParts = this.startTime.split(':').map(Number);
@@ -211,34 +160,18 @@ BookingSchema.methods.getDurationMinutes = function () {
   return (endParts[0] * 60 + endParts[1]) - (startParts[0] * 60 + startParts[1]);
 };
 
-/**
- * Check if booking is active (not cancelled or rejected)
- */
 BookingSchema.methods.isActive = function () {
   return this.status === 'pending' || this.status === 'approved';
 };
 
-/**
- * Check if booking can be modified
- */
 BookingSchema.methods.canModify = function () {
   return this.status === 'pending';
 };
 
-/**
- * Virtual Properties
- */
-
-/**
- * Meeting duration in minutes
- */
 BookingSchema.virtual("durationMinutes").get(function () {
   return this.getDurationMinutes();
 });
 
-/**
- * Meeting duration in hours (formatted)
- */
 BookingSchema.virtual("durationHours").get(function () {
   const minutes = this.getDurationMinutes();
   if (minutes === 0) return "0h 0m";
@@ -247,13 +180,6 @@ BookingSchema.virtual("durationHours").get(function () {
   return `${hours}h ${mins}m`;
 });
 
-/**
- * Static Methods
- */
-
-/**
- * Get bookings for a specific date
- */
 BookingSchema.statics.getByDate = function (date) {
   return this.find({
     meetingDate: new Date(date)
@@ -263,9 +189,6 @@ BookingSchema.statics.getByDate = function (date) {
     .sort({ startTime: 1 });
 };
 
-/**
- * Get bookings by status
- */
 BookingSchema.statics.getByStatus = function (status) {
   return this.find({ status })
     .populate("room", "roomName buildingNumber floorNumber")
@@ -273,16 +196,10 @@ BookingSchema.statics.getByStatus = function (status) {
     .sort({ meetingDate: 1, startTime: 1 });
 };
 
-/**
- * Get pending bookings
- */
 BookingSchema.statics.getPending = function () {
   return this.getByStatus('pending');
 };
 
-/**
- * Update booking status
- */
 BookingSchema.statics.updateStatus = async function (bookingId, status) {
   const validStatuses = ['pending', 'approved', 'rejected', 'cancelled'];
   if (!validStatuses.includes(status)) {
@@ -298,9 +215,6 @@ BookingSchema.statics.updateStatus = async function (bookingId, status) {
   return booking.save();
 };
 
-/**
- * Check room availability
- */
 BookingSchema.statics.checkAvailability = async function (roomId, date, startTime, endTime) {
   const overlapping = await this.findOne({
     room: roomId,
@@ -317,9 +231,6 @@ BookingSchema.statics.checkAvailability = async function (roomId, date, startTim
   return !overlapping;
 };
 
-/**
- * Pre-validate hook to ensure endTime is after startTime
- */
 BookingSchema.pre('validate', function(next) {
   if (this.startTime && this.endTime && this.startTime >= this.endTime) {
     this.invalidate('endTime', 'End time must be after start time');
