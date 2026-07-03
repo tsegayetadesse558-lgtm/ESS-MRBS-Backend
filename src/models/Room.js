@@ -1,16 +1,7 @@
 const mongoose = require("mongoose");
-
-/**
- * Room Schema - Professional Meeting Room Management
- * 
- * This schema defines the structure for meeting rooms in the ESS MRBS.
- * Rooms are managed by administrators and can be booked by users.
- */
 const RoomSchema = new mongoose.Schema(
   {
-    /**
-     * Room Identification
-     */
+    
     roomName: {
       type: String,
       required: [true, "Room name is required"],
@@ -21,9 +12,6 @@ const RoomSchema = new mongoose.Schema(
       index: true
     },
 
-    /**
-     * Location Information
-     */
     buildingNumber: {
       type: String,
       required: [true, "Building number is required"],
@@ -38,9 +26,6 @@ const RoomSchema = new mongoose.Schema(
       index: true
     },
 
-    /**
-     * Department Assignment - Which department owns/manages this room
-     */
     department: {
       type: String,
       required: [true, "Department is required"],
@@ -54,9 +39,6 @@ const RoomSchema = new mongoose.Schema(
       index: true
     },
 
-    /**
-     * Capacity & Facilities
-     */
     maxCapacity: {
       type: Number,
       required: [true, "Maximum capacity is required"],
@@ -64,14 +46,7 @@ const RoomSchema = new mongoose.Schema(
       max: [100, "Capacity cannot exceed 100 people"],
       index: true
     },
-
-    /**
-     * Room Status - Current availability
-     * - 'available': Ready for booking (when maxCapacity > 0)
-     * - 'booked': Currently reserved
-     * - 'maintenance': Under maintenance
-     * - 'unavailable': Not available (when maxCapacity <= 0)
-     */
+    
     status: {
       type: String,
       enum: ["available", "booked", "maintenance", "unavailable"],
@@ -79,9 +54,6 @@ const RoomSchema = new mongoose.Schema(
       index: true
     },
 
-    /**
-     * Additional Information
-     */
     description: {
       type: String,
       trim: true,
@@ -89,10 +61,6 @@ const RoomSchema = new mongoose.Schema(
       default: ""
     },
 
-    /**
-     * Amenities - Array of available facilities
-     * Example: ["Projector", "Whiteboard", "Video Conference", "WiFi"]
-     */
     amenities: {
       type: [String],
       default: [],
@@ -104,9 +72,6 @@ const RoomSchema = new mongoose.Schema(
       }
     },
 
-    /**
-     * Room Images - URLs to room photos
-     */
     images: {
       type: [String],
       default: [],
@@ -118,9 +83,6 @@ const RoomSchema = new mongoose.Schema(
       }
     },
 
-    /**
-     * Room Features
-     */
     features: {
       hasProjector: { type: Boolean, default: false },
       hasWhiteboard: { type: Boolean, default: false },
@@ -129,19 +91,13 @@ const RoomSchema = new mongoose.Schema(
       hasAudioSystem: { type: Boolean, default: false },
       hasAirConditioning: { type: Boolean, default: true },
     },
-
-    /**
-     * Pricing & Availability
-     */
+    
     hourlyRate: {
       type: Number,
       default: 0,
       min: [0, "Hourly rate cannot be negative"]
     },
 
-    /**
-     * Audit & Administrative
-     */
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -160,33 +116,20 @@ const RoomSchema = new mongoose.Schema(
   }
 );
 
-/**
- * Indexes for optimal query performance
- */
 RoomSchema.index({ buildingNumber: 1, floorNumber: 1 });
 RoomSchema.index({ department: 1, status: 1 });
 RoomSchema.index({ status: 1, maxCapacity: 1 });
 RoomSchema.index({ createdAt: -1 });
 
-/**
- * Compound index for unique room location
- */
 RoomSchema.index({ buildingNumber: 1, floorNumber: 1, roomName: 1 }, { unique: true });
-
-/**
- * Pre-save middleware - Auto-update status based on maxCapacity
- */
 RoomSchema.pre("save", function (next) {
   // Trim room name
   if (this.roomName) {
     this.roomName = this.roomName.trim();
   }
-  
   // Clean amenities (remove duplicates and empty strings)
   if (this.amenities && this.amenities.length > 0) {
-    this.amenities = [...new Set(this.amenities.filter(item => item && item.trim()))];
-  }
-
+    this.amenities = [...new Set(this.amenities.filter(item => item && item.trim()))]; }
   // AUTO-UPDATE STATUS BASED ON maxCapacity
   if (this.maxCapacity <= 0) {
     // If capacity is 0 or less, room is unavailable
@@ -198,10 +141,6 @@ RoomSchema.pre("save", function (next) {
   
   next();
 });
-
-/**
- * Pre-update middleware - Auto-update status when maxCapacity changes via update
- */
 RoomSchema.pre("findOneAndUpdate", async function (next) {
   const update = this.getUpdate();
   const docToUpdate = await this.model.findOne(this.getQuery());
@@ -220,15 +159,6 @@ RoomSchema.pre("findOneAndUpdate", async function (next) {
   
   next();
 });
-
-/**
- * Instance Methods
- */
-
-/**
- * Update room status based on maxCapacity and active bookings
- * @returns {Promise<Object>} - Updated room
- */
 RoomSchema.methods.updateStatus = async function () {
   const Booking = mongoose.model("Booking");
   
@@ -254,14 +184,6 @@ RoomSchema.methods.updateStatus = async function () {
   await this.save();
   return this;
 };
-
-/**
- * Check if room is available for booking
- * @param {Date} date - Date to check
- * @param {string} startTime - Start time (HH:MM)
- * @param {string} endTime - End time (HH:MM)
- * @returns {Promise<boolean>} - True if available
- */
 RoomSchema.methods.isAvailable = async function (date, startTime, endTime) {
   const Booking = mongoose.model("Booking");
   
@@ -284,13 +206,6 @@ RoomSchema.methods.isAvailable = async function (date, startTime, endTime) {
   
   return !overlappingBooking;
 };
-
-/**
- * Get room utilization statistics
- * @param {Date} startDate - Start date for stats
- * @param {Date} endDate - End date for stats
- * @returns {Promise<Object>} - Utilization statistics
- */
 RoomSchema.methods.getUtilizationStats = async function (startDate, endDate) {
   const Booking = mongoose.model("Booking");
   
@@ -312,52 +227,20 @@ RoomSchema.methods.getUtilizationStats = async function (startDate, endDate) {
   };
 };
 
-/**
- * Virtual Properties
- */
-
-/**
- * Full location display
- */
 RoomSchema.virtual("fullLocation").get(function () {
   return `Building ${this.buildingNumber}, Floor ${this.floorNumber}`;
 });
 
-/**
- * Room display name
- */
 RoomSchema.virtual("displayName").get(function () {
   return `${this.roomName} (${this.department})`;
 });
-
-/**
- * Check if room is bookable
- */
 RoomSchema.virtual("isBookable").get(function () {
   return this.status === "available" && this.maxCapacity > 0;
 });
-
-/**
- * Static Methods
- */
-
-/**
- * Get rooms by building
- * @param {string} buildingNumber - Building number
- * @returns {Promise<Array>} - Rooms in building
- */
 RoomSchema.statics.getByBuilding = function (buildingNumber) {
   return this.find({ buildingNumber }).sort({ floorNumber: 1, roomName: 1 });
 };
 
-/**
- * Get available rooms on a specific date/time
- * @param {Date} date - Meeting date
- * @param {string} startTime - Start time (HH:MM)
- * @param {string} endTime - End time (HH:MM)
- * @param {number} guests - Number of guests
- * @returns {Promise<Array>} - Available rooms
- */
 RoomSchema.statics.getAvailableRooms = async function (date, startTime, endTime, guests = 1) {
   const Booking = mongoose.model("Booking");
   
@@ -378,11 +261,6 @@ RoomSchema.statics.getAvailableRooms = async function (date, startTime, endTime,
   
   return availableRooms;
 };
-
-/**
- * Get room statistics by department
- * @returns {Promise<Array>} - Department statistics
- */
 RoomSchema.statics.getDepartmentStats = async function () {
   return this.aggregate([
     {
@@ -407,10 +285,6 @@ RoomSchema.statics.getDepartmentStats = async function () {
     { $sort: { _id: 1 } }
   ]);
 };
-
-/**
- * Room availability summary
- */
 RoomSchema.statics.getAvailabilitySummary = async function () {
   const total = await this.countDocuments();
   const available = await this.countDocuments({ status: "available" });
