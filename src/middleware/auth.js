@@ -1,13 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
-/**
- * Authentication Middleware - Professional JWT Verification
- * 
- * This middleware protects routes by verifying JWT tokens.
- * It extracts the token from the Authorization header,
- * verifies its validity, and attaches the user to the request object.
- */
 const protect = async (req, res, next) => {
   try {
     let token;
@@ -85,15 +78,6 @@ const protect = async (req, res, next) => {
   }
 };
 
-/**
- * Role Authorization Middleware
- * 
- * This middleware restricts access to specific roles.
- * Must be used after the protect middleware.
- * 
- * @param {...string} roles - Allowed roles (e.g., 'admin', 'registered')
- * @returns {Function} Middleware function
- */
 const authorize = (...roles) => {
   return (req, res, next) => {
     // Check if user exists (should be attached by protect middleware)
@@ -120,20 +104,10 @@ const authorize = (...roles) => {
   };
 };
 
-/**
- * Check if user is admin (shortcut for authorize('admin'))
- */
 const isAdmin = authorize("admin");
 
-/**
- * Check if user is registered user (shortcut for authorize('registered'))
- */
 const isRegistered = authorize("registered");
 
-/**
- * Optional Authentication - Doesn't require authentication
- * But if token is provided, it will validate it
- */
 const optionalAuth = async (req, res, next) => {
   try {
     let token;
