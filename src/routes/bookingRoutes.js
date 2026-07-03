@@ -191,10 +191,6 @@ router.put("/:id/cancel", protect, async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
-
-// ============================================
-// DELETE BOOKING (Admin only)
-// ============================================
 router.delete("/:id", protect, authorize("admin"), async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
