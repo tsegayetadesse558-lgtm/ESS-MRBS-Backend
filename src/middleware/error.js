@@ -56,40 +56,18 @@ const errorHandler = (err, req, res, next) => {
   res.status(response.status).json(response);
 };
 
-/**
- * 404 Not Found Handler
- * 
- * Handles requests to routes that don't exist
- */
 const notFound = (req, res, next) => {
   const error = new Error(`Route not found: ${req.originalUrl}`);
   error.statusCode = 404;
   next(error);
 };
 
-/**
- * Async Error Wrapper
- * 
- * Wraps async route handlers to automatically catch errors
- * and pass them to the error handler middleware
- * 
- * @param {Function} fn - Async function to wrap
- * @returns {Function} Wrapped function
- */
 const asyncWrapper = (fn) => {
   return (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 };
 
-/**
- * Custom Error Class
- * 
- * Use this to create custom errors with specific status codes
- * 
- * @example
- * throw new AppError('User not found', 404, 'USER_NOT_FOUND')
- */
 class AppError extends Error {
   constructor(message, statusCode = 500, code = "APP_ERROR") {
     super(message);
