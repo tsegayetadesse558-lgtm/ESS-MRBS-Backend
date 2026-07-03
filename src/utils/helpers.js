@@ -1,8 +1,3 @@
-/**
- * Helper Functions
- * Utility functions used across the application
- */
-
 // Format date to readable string
 const formatDate = (date) => {
   return new Date(date).toLocaleDateString('en-US', {
