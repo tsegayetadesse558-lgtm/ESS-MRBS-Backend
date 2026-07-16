@@ -5,19 +5,16 @@ const User = require("../models/User");
  * Authentication Middleware - Professional JWT Verification
  * 
  * This middleware protects routes by verifying JWT tokens.
- * It extracts the token from the Authorization header,
- * verifies its validity, and attaches the user to the request object.
+ * It extracts the token from cookies, verifies its validity,
+ * and attaches the user to the request object.
  */
 const protect = async (req, res, next) => {
   try {
     let token;
 
-    // 1. Extract token from Authorization header
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
+    // 1. Extract token from cookies
+    if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
     }
 
     // 2. Check if token exists
@@ -138,11 +135,8 @@ const optionalAuth = async (req, res, next) => {
   try {
     let token;
 
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
+    if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
     }
 
     if (token) {

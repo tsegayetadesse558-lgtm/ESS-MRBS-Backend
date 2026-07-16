@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
+const cookieParser = require("cookie-parser");
 
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
@@ -10,6 +11,7 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const roomRoutes = require("./routes/roomRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
+const scheduleRoutes = require("./routes/scheduleRoutes");
 
 const app = express();
 connectDB();
@@ -17,8 +19,11 @@ connectDB();
 // ✅ DYNAMIC CORS - Allows any localhost port
 app.use(cors({
   origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    if (origin.match(/^http:\/\/localhost:\d+$/) || origin.match(/^http:\/\/127\.0\.0\.1:\d+$/)) {
+    
+    // Allow any localhost port for development
+    if (origin.match(/^http:\/\/localhost:\d+$/)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -29,6 +34,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -55,6 +61,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/schedules", scheduleRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({
@@ -66,6 +73,7 @@ app.get("/", (req, res) => {
       users: "/api/users",
       rooms: "/api/rooms",
       bookings: "/api/bookings",
+      schedules: "/api/schedules",
       health: "/api/health",
       test: "/api/test"
     },

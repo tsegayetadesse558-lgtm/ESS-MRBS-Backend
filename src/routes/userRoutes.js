@@ -6,7 +6,7 @@ const {
   createUser,
   updateUser,
   deleteUser,
-} = require("../controllers/authController");  // ✅ Changed to authController
+} = require("../controllers/authController");  // ✅ Import from authController
 const { protect, authorize } = require("../middleware/auth");
 
 // All user routes require authentication and admin authorization
@@ -15,7 +15,7 @@ router.use(authorize("admin"));
 
 router.route("/")
   .get(getUsers)
-  .post(createUser);  // ✅ This uses the fixed createUser from authController
+  .post(createUser);  // ✅ Uses the fixed createUser
 
 router.route("/:id")
   .get(getUser)
