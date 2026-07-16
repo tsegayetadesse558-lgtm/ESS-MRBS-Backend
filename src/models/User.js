@@ -1,18 +1,9 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken"); // ADDED: Required for generateToken
+const jwt = require("jsonwebtoken");
 
-/**
- * User Schema - Professional Meeting Room Booking System
- * 
- * This schema defines the structure for user accounts in the ESS MRBS.
- * Users can be either 'admin' or 'registered' with different permissions.
- */
 const UserSchema = new mongoose.Schema(
   {
-    /**
-     * Personal Information
-     */
     fullName: {
       type: String,
       required: [true, "Full name is required"],
@@ -23,11 +14,6 @@ const UserSchema = new mongoose.Schema(
         return value ? value.replace(/\s+/g, ' ').trim() : value;
       }
     },
-
-    /**
-     * Username - Used for login (required by system requirements)
-     * Must be unique, lowercase, and contain only letters, numbers, underscore
-     */
     username: {
       type: String,
       required: [true, "Username is required"],
@@ -42,16 +28,11 @@ const UserSchema = new mongoose.Schema(
       ],
       index: true
     },
-
-    /**
-     * Email - Optional as per system requirements
-     * If provided, must be unique and valid email format
-     */
     email: {
       type: String,
       required: false,
       unique: true,
-      sparse: true,
+      sparse: true,  // ✅ Important: allows multiple null values
       trim: true,
       lowercase: true,
       validate: {
@@ -63,11 +44,6 @@ const UserSchema = new mongoose.Schema(
         message: "Please provide a valid email address"
       }
     },
-
-    /**
-     * Password - Hashed using bcrypt
-     * Not returned in queries by default (select: false)
-     */
     password: {
       type: String,
       required: [true, "Password is required"],
@@ -75,11 +51,6 @@ const UserSchema = new mongoose.Schema(
       maxlength: [100, "Password cannot exceed 100 characters"],
       select: false,
     },
-
-    /**
-     * Department - Must match the system departments
-     * Required for user management
-     */
     department: {
       type: String,
       required: [true, "Department is required"],
@@ -92,39 +63,21 @@ const UserSchema = new mongoose.Schema(
       ],
       index: true
     },
-
-    /**
-     * Role - Defines user permissions
-     * - 'admin': Full system access
-     * - 'registered': Standard user access
-     */
     role: {
       type: String,
       enum: ["admin", "registered"],
       default: "registered",
       index: true
     },
-
-    /**
-     * Status - Account status
-     * - 'active': Normal access
-     * - 'disabled': Account locked
-     * - 'pending': Awaiting approval
-     */
     status: {
       type: String,
       enum: ["active", "disabled", "pending"],
       default: "active",
       index: true
     },
-
-    /**
-     * Audit Information
-     */
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      comment: "Reference to the admin who created this user"
     },
     lastLogin: {
       type: Date,
@@ -150,29 +103,22 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-/**
- * Indexes for optimal query performance
- */
+// Indexes
 UserSchema.index({ role: 1 });
 UserSchema.index({ department: 1, role: 1 });
 UserSchema.index({ createdAt: -1 });
 UserSchema.index({ status: 1 });
 
-/**
- * Pre-save middleware - Hash password before saving
- * Only hash if password is modified
- */
+// Pre-save middleware - Hash password
 UserSchema.pre("save", async function (next) {
   try {
     if (!this.isModified("password")) {
       return next();
     }
 
-    // Generate salt and hash password
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     
-    // Reset login attempts when password is changed
     this.loginAttempts = 0;
     this.lockedUntil = null;
     
@@ -182,9 +128,7 @@ UserSchema.pre("save", async function (next) {
   }
 });
 
-/**
- * Pre-save middleware - Format full name on save
- */
+// Pre-save middleware - Format full name
 UserSchema.pre("save", function (next) {
   if (this.fullName) {
     this.fullName = this.fullName.replace(/\s+/g, ' ').trim();
@@ -192,14 +136,7 @@ UserSchema.pre("save", function (next) {
   next();
 });
 
-/**
- * Instance Methods
- */
-
-/**
- * Generate JWT Token for authentication
- * @returns {string} JWT token
- */
+// Instance Methods
 UserSchema.methods.generateToken = function() {
   return jwt.sign(
     { 
@@ -208,16 +145,11 @@ UserSchema.methods.generateToken = function() {
       email: this.email,
       role: this.role 
     }, 
-    process.env.JWT_SECRET, 
-    { expiresIn: process.env.JWT_EXPIRE || "30d" }
+    process.env.JWT_SECRET || 'your-secret-key', 
+    { expiresIn: process.env.JWT_EXPIRE || "7d" }
   );
 };
 
-/**
- * Compare entered password with stored hashed password
- * @param {string} enteredPassword - Plain text password to compare
- * @returns {Promise<boolean>} - True if passwords match
- */
 UserSchema.methods.comparePassword = async function (enteredPassword) {
   try {
     return await bcrypt.compare(enteredPassword, this.password);
@@ -226,22 +158,14 @@ UserSchema.methods.comparePassword = async function (enteredPassword) {
   }
 };
 
-/**
- * Check if account is locked
- * @returns {boolean} - True if account is locked
- */
 UserSchema.methods.isLocked = function () {
   if (!this.lockedUntil) return false;
   return this.lockedUntil > new Date();
 };
 
-/**
- * Increment login attempts
- */
 UserSchema.methods.incrementLoginAttempts = async function () {
   this.loginAttempts += 1;
   
-  // Lock account after 5 failed attempts for 30 minutes
   if (this.loginAttempts >= 5) {
     this.lockedUntil = new Date(Date.now() + 30 * 60 * 1000);
   }
@@ -250,9 +174,6 @@ UserSchema.methods.incrementLoginAttempts = async function () {
   return this;
 };
 
-/**
- * Reset login attempts on successful login
- */
 UserSchema.methods.resetLoginAttempts = async function () {
   this.loginAttempts = 0;
   this.lockedUntil = null;
@@ -261,20 +182,11 @@ UserSchema.methods.resetLoginAttempts = async function () {
   return this;
 };
 
-/**
- * Virtual Properties
- */
-
-/**
- * Full name virtual (already stored as field)
- */
+// Virtual Properties
 UserSchema.virtual("displayName").get(function () {
-  return this.fullName || `${this.firstName} ${this.lastName}`;
+  return this.fullName || this.username;
 });
 
-/**
- * Short user info for API responses
- */
 UserSchema.virtual("shortInfo").get(function () {
   return {
     id: this._id,
@@ -286,15 +198,7 @@ UserSchema.virtual("shortInfo").get(function () {
   };
 });
 
-/**
- * Static Methods
- */
-
-/**
- * Find user by username or email
- * @param {string} identifier - Username to search for
- * @returns {Promise<Object>} - User document
- */
+// Static Methods
 UserSchema.statics.findByUsernameOrEmail = function (identifier) {
   if (!identifier) return null;
   return this.findOne({
@@ -305,10 +209,6 @@ UserSchema.statics.findByUsernameOrEmail = function (identifier) {
   });
 };
 
-/**
- * Get active users count by role
- * @returns {Promise<Object>} - Counts by role
- */
 UserSchema.statics.getRoleCounts = async function () {
   const counts = await this.aggregate([
     { $group: { _id: "$role", count: { $sum: 1 } } }
@@ -320,9 +220,6 @@ UserSchema.statics.getRoleCounts = async function () {
   }, {});
 };
 
-/**
- * Static method to check if email is already in use
- */
 UserSchema.statics.isEmailInUse = async function (email, excludeUserId) {
   if (!email) return false;
   
@@ -335,9 +232,6 @@ UserSchema.statics.isEmailInUse = async function (email, excludeUserId) {
   return !!existing;
 };
 
-/**
- * Static method to check if username is already in use
- */
 UserSchema.statics.isUsernameInUse = async function (username, excludeUserId) {
   if (!username) return false;
   
@@ -350,7 +244,7 @@ UserSchema.statics.isUsernameInUse = async function (username, excludeUserId) {
   return !!existing;
 };
 
-// Handle duplicate key errors gracefully
+// Handle duplicate key errors
 UserSchema.post('save', function(error, doc, next) {
   if (error.code === 11000) {
     if (error.keyPattern && error.keyPattern.email) {

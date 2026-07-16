@@ -1,4 +1,4 @@
-const Room = require("../models/Room");
+ const Room = require("../models/Room");
 const Booking = require("../models/Booking");
 
 // @desc    Get all rooms
