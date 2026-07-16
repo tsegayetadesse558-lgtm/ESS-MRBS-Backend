@@ -16,7 +16,7 @@ exports.register = async (req, res) => {
         }
 
         // Check if email exists (if provided)
-        if (email) {
+        if (email && email.trim() !== '') {
             const existingEmail = await User.findOne({ email: email.toLowerCase() });
             if (existingEmail) {
                 return res.status(400).json({
@@ -26,16 +26,20 @@ exports.register = async (req, res) => {
             }
         }
 
-        // Create user
-        const user = new User({
+        // Build user data - only add email if provided
+        const userData = {
             fullName,
             username: username.toLowerCase(),
-            email: email ? email.toLowerCase() : null,
             department,
             password,
             role: 'registered'
-        });
+        };
 
+        if (email && email.trim() !== '') {
+            userData.email = email.toLowerCase();
+        }
+
+        const user = new User(userData);
         await user.save();
 
         // Generate token
@@ -45,11 +49,18 @@ exports.register = async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: false,
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
         const userResponse = {
             id: user._id,
             fullName: user.fullName,
             username: user.username,
-            email: user.email,
+            email: user.email || null,
             department: user.department,
             role: user.role
         };
@@ -57,7 +68,6 @@ exports.register = async (req, res) => {
         res.status(201).json({
             success: true,
             message: 'User registered successfully',
-            token,
             user: userResponse
         });
 
@@ -120,11 +130,18 @@ exports.login = async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: false,
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
         const userResponse = {
             id: user._id,
             fullName: user.fullName,
             username: user.username,
-            email: user.email,
+            email: user.email || null,
             department: user.department,
             role: user.role
         };
@@ -134,7 +151,6 @@ exports.login = async (req, res) => {
         res.status(200).json({
             success: true,
             message: 'Login successful',
-            token,
             user: userResponse
         });
 
@@ -174,6 +190,7 @@ exports.getMe = async (req, res) => {
 
 // Logout
 exports.logout = (req, res) => {
+    res.clearCookie('token');
     res.status(200).json({
         success: true,
         message: 'Logged out successfully'
@@ -264,12 +281,14 @@ exports.forgotPassword = async (req, res) => {
 
 // ============= ADMIN FUNCTIONS =============
 
-// Create user (admin only) - ✅ FIXED: Email is optional
+// Create user (admin only) - ✅ FULLY FIXED: Email is optional
 exports.createUser = async (req, res) => {
     try {
         const { fullName, username, email, department, role, password } = req.body;
 
-        // ✅ Email is optional - don't require it
+        console.log('📝 Creating user:', { fullName, username, email, department, role });
+
+        // Validate required fields
         if (!fullName || !username || !department || !password) {
             return res.status(400).json({
                 success: false,
@@ -278,7 +297,7 @@ exports.createUser = async (req, res) => {
         }
 
         // Check if username exists
-        const existingUser = await User.findOne({ username: username.toLowerCase() });
+        const existingUser = await User.findOne({ username: username.toLowerCase().trim() });
         if (existingUser) {
             return res.status(400).json({
                 success: false,
@@ -286,37 +305,42 @@ exports.createUser = async (req, res) => {
             });
         }
 
-        // ✅ Only check email if it's provided
-        if (email) {
-            const existingEmail = await User.findOne({ email: email.toLowerCase() });
+        // Build user data object - start with required fields only
+        const userData = {
+            fullName: fullName.trim(),
+            username: username.toLowerCase().trim(),
+            department,
+            role: role || 'registered',
+            password,
+        };
+
+        // ✅ ONLY add email if it's provided and not empty
+        if (email && email.trim() !== '') {
+            const emailToSave = email.toLowerCase().trim();
+            const existingEmail = await User.findOne({ email: emailToSave });
             if (existingEmail) {
                 return res.status(400).json({
                     success: false,
                     message: 'Email already exists'
                 });
             }
+            userData.email = emailToSave;
         }
+        // ✅ If no email, DON'T add email field at all (not even null)
 
-        // Create user - email can be null
-        const user = new User({
-            fullName,
-            username: username.toLowerCase(),
-            email: email ? email.toLowerCase() : null,  // ✅ Allow null email
-            department,
-            role: role || 'registered',
-            password,
-        });
-
+        const user = new User(userData);
         await user.save();
 
         const userResponse = {
             id: user._id,
             fullName: user.fullName,
             username: user.username,
-            email: user.email,
+            email: user.email || null,
             department: user.department,
             role: user.role
         };
+
+        console.log('✅ User created:', userResponse);
 
         res.status(201).json({
             success: true,
@@ -325,7 +349,7 @@ exports.createUser = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error creating user:', error);
+        console.error('❌ Error creating user:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to create user',
@@ -337,7 +361,7 @@ exports.createUser = async (req, res) => {
 // Get all users (admin only)
 exports.getUsers = async (req, res) => {
     try {
-        const users = await User.find().select('-password');
+        const users = await User.find().select('-password').sort({ createdAt: -1 });
         res.status(200).json({
             success: true,
             data: users
@@ -392,10 +416,32 @@ exports.updateUser = async (req, res) => {
         }
 
         // Update fields
-        if (fullName) user.fullName = fullName;
-        if (email) user.email = email.toLowerCase();
+        if (fullName) user.fullName = fullName.trim();
+        
+        // ✅ Handle email update - only if provided
+        if (email !== undefined) {
+            if (email && email.trim() !== '') {
+                const emailToSave = email.toLowerCase().trim();
+                const existingEmail = await User.findOne({ 
+                    email: emailToSave,
+                    _id: { $ne: id }
+                });
+                if (existingEmail) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Email already exists'
+                    });
+                }
+                user.email = emailToSave;
+            } else {
+                // ✅ Remove email field if empty
+                user.email = undefined;
+            }
+        }
+        
         if (department) user.department = department;
         if (role) user.role = role;
+        
         if (password) {
             if (password.length < 6) {
                 return res.status(400).json({
@@ -412,7 +458,7 @@ exports.updateUser = async (req, res) => {
             id: user._id,
             fullName: user.fullName,
             username: user.username,
-            email: user.email,
+            email: user.email || null,
             department: user.department,
             role: user.role
         };
