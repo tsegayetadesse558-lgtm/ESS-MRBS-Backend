@@ -1,11 +1,6 @@
 const { body, param, query, validationResult } = require("express-validator");
 const { DEPARTMENTS, BOOKING_LIMITS, TIME_FORMAT } = require("../config/constants");
 
-/**
- * Validation middleware - Checks for validation errors
- * @param {Array} validations - Array of validation chains
- * @returns {Function} - Express middleware
- */
 const validate = (validations) => {
   return async (req, res, next) => {
     // Run all validations
@@ -31,10 +26,6 @@ const validate = (validations) => {
     });
   };
 };
-
-/**
- * User Validation Rules
- */
 const userValidation = {
   // Create user validation
   createUser: [
@@ -98,9 +89,6 @@ const userValidation = {
   ],
 };
 
-/**
- * Room Validation Rules
- */
 const roomValidation = {
   // Create room validation
   createRoom: [
@@ -130,7 +118,7 @@ const roomValidation = {
       .isArray().withMessage("Amenities must be an array"),
   ],
 
-  // Update room validation
+// Update room validation
   updateRoom: [
     param("id")
       .isMongoId().withMessage("Invalid room ID format"),
@@ -167,9 +155,6 @@ const roomValidation = {
   ],
 };
 
-/**
- * Booking Validation Rules
- */
 const bookingValidation = {
   // Create booking validation
   createBooking: [
@@ -266,9 +251,6 @@ const bookingValidation = {
   ],
 };
 
-/**
- * Common Validation Rules
- */
 const commonValidation = {
   // Pagination validation
   pagination: [

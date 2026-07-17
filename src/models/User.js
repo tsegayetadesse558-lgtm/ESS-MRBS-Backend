@@ -4,6 +4,10 @@ const jwt = require("jsonwebtoken");
 
 const UserSchema = new mongoose.Schema(
   {
+<<<<<<< HEAD
+=======
+  
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
     fullName: {
       type: String,
       required: [true, "Full name is required"],
@@ -44,6 +48,10 @@ const UserSchema = new mongoose.Schema(
         message: "Please provide a valid email address"
       }
     },
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
     password: {
       type: String,
       required: [true, "Password is required"],
@@ -51,6 +59,10 @@ const UserSchema = new mongoose.Schema(
       maxlength: [100, "Password cannot exceed 100 characters"],
       select: false,
     },
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
     department: {
       type: String,
       required: [true, "Department is required"],
@@ -63,18 +75,30 @@ const UserSchema = new mongoose.Schema(
       ],
       index: true
     },
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
     role: {
       type: String,
       enum: ["admin", "registered"],
       default: "registered",
       index: true
     },
+<<<<<<< HEAD
+=======
+    
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
     status: {
       type: String,
       enum: ["active", "disabled", "pending"],
       default: "active",
       index: true
     },
+<<<<<<< HEAD
+=======
+    
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -102,14 +126,20 @@ const UserSchema = new mongoose.Schema(
     toObject: { virtuals: true }
   }
 );
+<<<<<<< HEAD
 
 // Indexes
+=======
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
 UserSchema.index({ role: 1 });
 UserSchema.index({ department: 1, role: 1 });
 UserSchema.index({ createdAt: -1 });
 UserSchema.index({ status: 1 });
+<<<<<<< HEAD
 
 // Pre-save middleware - Hash password
+=======
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
 UserSchema.pre("save", async function (next) {
   try {
     if (!this.isModified("password")) {
@@ -127,16 +157,22 @@ UserSchema.pre("save", async function (next) {
     next(error);
   }
 });
+<<<<<<< HEAD
 
 // Pre-save middleware - Format full name
+=======
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
 UserSchema.pre("save", function (next) {
   if (this.fullName) {
     this.fullName = this.fullName.replace(/\s+/g, ' ').trim();
   }
   next();
 });
+<<<<<<< HEAD
 
 // Instance Methods
+=======
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
 UserSchema.methods.generateToken = function() {
   return jwt.sign(
     { 
@@ -149,7 +185,10 @@ UserSchema.methods.generateToken = function() {
     { expiresIn: process.env.JWT_EXPIRE || "7d" }
   );
 };
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
 UserSchema.methods.comparePassword = async function (enteredPassword) {
   try {
     return await bcrypt.compare(enteredPassword, this.password);
@@ -162,7 +201,10 @@ UserSchema.methods.isLocked = function () {
   if (!this.lockedUntil) return false;
   return this.lockedUntil > new Date();
 };
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
 UserSchema.methods.incrementLoginAttempts = async function () {
   this.loginAttempts += 1;
   
@@ -173,7 +215,10 @@ UserSchema.methods.incrementLoginAttempts = async function () {
   await this.save({ validateBeforeSave: false });
   return this;
 };
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
 UserSchema.methods.resetLoginAttempts = async function () {
   this.loginAttempts = 0;
   this.lockedUntil = null;
@@ -182,11 +227,17 @@ UserSchema.methods.resetLoginAttempts = async function () {
   return this;
 };
 
+<<<<<<< HEAD
 // Virtual Properties
+=======
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
 UserSchema.virtual("displayName").get(function () {
   return this.fullName || this.username;
 });
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
 UserSchema.virtual("shortInfo").get(function () {
   return {
     id: this._id,
@@ -198,7 +249,10 @@ UserSchema.virtual("shortInfo").get(function () {
   };
 });
 
+<<<<<<< HEAD
 // Static Methods
+=======
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
 UserSchema.statics.findByUsernameOrEmail = function (identifier) {
   if (!identifier) return null;
   return this.findOne({
@@ -219,7 +273,10 @@ UserSchema.statics.getRoleCounts = async function () {
     return acc;
   }, {});
 };
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
 UserSchema.statics.isEmailInUse = async function (email, excludeUserId) {
   if (!email) return false;
   
@@ -231,7 +288,10 @@ UserSchema.statics.isEmailInUse = async function (email, excludeUserId) {
   const existing = await this.findOne(query);
   return !!existing;
 };
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
 UserSchema.statics.isUsernameInUse = async function (username, excludeUserId) {
   if (!username) return false;
   
