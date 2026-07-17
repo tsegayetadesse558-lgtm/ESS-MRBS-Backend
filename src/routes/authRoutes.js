@@ -3,7 +3,7 @@ const router = express.Router();
 const { 
   register, 
   login, 
-  getMe,        // ✅ Use getMe (not getProfile)
+  getMe,
   logout,
   changePassword,
   forgotPassword 
@@ -16,7 +16,7 @@ router.post("/login", login);
 router.post("/forgot-password", forgotPassword);
 
 // Protected routes
-router.get("/me", protect, getMe);  // ✅ Use getMe
+router.get("/me", protect, getMe);
 router.post("/logout", protect, logout);
 router.put("/change-password", protect, changePassword);
 

@@ -45,7 +45,6 @@ const BookingSchema = new mongoose.Schema(
         /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
         "Please provide valid time in HH:MM format"
       ]
-      // REMOVED: Business hours validation (8:00 AM - 8:00 PM restriction)
     },
 
     endTime: {
@@ -55,7 +54,6 @@ const BookingSchema = new mongoose.Schema(
         /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
         "Please provide valid time in HH:MM format"
       ]
-      // REMOVED: Business hours validation (8:00 AM - 8:00 PM restriction)
     },
 
     /**
@@ -79,6 +77,24 @@ const BookingSchema = new mongoose.Schema(
       index: true
     },
 
+    meetingTitle: {
+      type: String,
+      trim: true,
+      maxlength: [100, "Meeting title cannot exceed 100 characters"],
+      default: "Meeting"
+    },
+
+    adminName: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+
+    scheduledByAdmin: {
+      type: Boolean,
+      default: false
+    },
+
     teaService: {
       type: Boolean,
       default: false,
@@ -97,12 +113,41 @@ const BookingSchema = new mongoose.Schema(
 
     /**
      * Booking Status
+     * - pending: User booking waiting for approval
+     * - approved: User booking approved
+     * - scheduled: Admin created schedule/availability
+     * - rejected: Booking rejected
+     * - cancelled: Booking cancelled
      */
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected', 'cancelled'],
+      enum: ['pending', 'approved', 'rejected', 'cancelled', 'scheduled'],
       default: 'pending',
       index: true
+    },
+
+    /**
+     * Schedule specific fields
+     * isSchedule: True if this is an admin-created schedule (not a user booking)
+     * currentBookings: Number of users who have booked this schedule
+     * remainingCapacity: Remaining seats available
+     */
+    isSchedule: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+
+    currentBookings: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    remainingCapacity: {
+      type: Number,
+      default: 0,
+      min: 0
     }
   },
   {
@@ -119,6 +164,7 @@ BookingSchema.index({ meetingDate: 1, startTime: 1, endTime: 1 });
 BookingSchema.index({ room: 1, meetingDate: 1 });
 BookingSchema.index({ scheduledBy: 1 });
 BookingSchema.index({ createdAt: -1 });
+BookingSchema.index({ status: 1, isSchedule: 1 });
 
 /**
  * Pre-save middleware - Validate time range and business rules
@@ -142,8 +188,6 @@ BookingSchema.pre("save", async function (next) {
       throw new Error("Meeting duration must be at least 15 minutes");
     }
 
-    // REMOVED: Maximum booking duration is 8 hours (no limit anymore)
-
     next();
   } catch (error) {
     next(error);
@@ -162,6 +206,11 @@ BookingSchema.pre("save", async function (next) {
       return next();
     }
 
+    // Skip overlap check for schedules (they can overlap with bookings)
+    if (this.isSchedule) {
+      return next();
+    }
+
     const Booking = mongoose.model("Booking");
 
     // Check for overlapping bookings with proper time comparison
@@ -169,7 +218,7 @@ BookingSchema.pre("save", async function (next) {
       room: this.room,
       meetingDate: this.meetingDate,
       _id: { $ne: this._id },
-      status: { $nin: ['rejected', 'cancelled'] }, // Only check active bookings
+      status: { $nin: ['rejected', 'cancelled'] },
       $or: [
         {
           startTime: { $lt: this.endTime },
@@ -284,7 +333,7 @@ BookingSchema.statics.getPending = function () {
  * Update booking status
  */
 BookingSchema.statics.updateStatus = async function (bookingId, status) {
-  const validStatuses = ['pending', 'approved', 'rejected', 'cancelled'];
+  const validStatuses = ['pending', 'approved', 'rejected', 'cancelled', 'scheduled'];
   if (!validStatuses.includes(status)) {
     throw new Error('Invalid status');
   }
