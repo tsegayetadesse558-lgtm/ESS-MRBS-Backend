@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { protect, authorize } = require("../middleware/auth");
 const Booking = require("../models/Booking");
+const Schedule = require("../models/Schedule");
 const Room = require("../models/Room");
 
 // Get all bookings
@@ -25,7 +26,7 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
-// Create booking
+// ✅ Create booking with duplicate schedule check
 router.post("/", protect, async (req, res) => {
   try {
     const { 
@@ -36,8 +37,89 @@ router.post("/", protect, async (req, res) => {
       numberOfGuests, 
       teaService, 
       meetingTitle,
-      notes 
+      notes,
+      scheduleId,
+      isScheduleBooking,
+      bookedBy
     } = req.body;
+
+    console.log('📝 Booking request:', { isScheduleBooking, scheduleId, room });
+
+    // ✅ SCHEDULE BOOKING
+    if (isScheduleBooking === true && scheduleId) {
+      console.log('📝 Processing SCHEDULE booking...');
+      
+      // ✅ IMPORTANT: Check if user already booked this schedule
+      const existingBooking = await Booking.findOne({
+        scheduleId: scheduleId,
+        scheduledBy: bookedBy || req.user.id,
+        status: { $in: ['approved', 'pending'] }
+      });
+
+      if (existingBooking) {
+        console.log('❌ User already booked this schedule:', existingBooking._id);
+        return res.status(409).json({
+          success: false,
+          message: "You have already booked this schedule."
+        });
+      }
+
+      // Find the schedule
+      const schedule = await Schedule.findById(scheduleId).populate('room');
+      
+      if (!schedule) {
+        return res.status(404).json({
+          success: false,
+          message: "Schedule not found"
+        });
+      }
+
+      // Check capacity
+      const currentBookings = schedule.currentBookings || 0;
+      const maxCapacity = schedule.room?.maxCapacity || schedule.numberOfGuests || 0;
+      
+      console.log(`📊 Capacity: ${currentBookings}/${maxCapacity}`);
+      
+      if (currentBookings >= maxCapacity) {
+        return res.status(400).json({
+          success: false,
+          message: "Room is full. No seats available."
+        });
+      }
+
+      // ✅ Create booking - NO conflict check
+      const booking = await Booking.create({
+        room: room,
+        scheduleId: scheduleId,
+        meetingDate: schedule.meetingDate,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        numberOfGuests: 1,
+        teaService: teaService || false,
+        meetingTitle: schedule.meetingTitle || '',
+        notes: notes || `Booking from schedule: ${schedule.meetingTitle}`,
+        scheduledBy: bookedBy || req.user.id,
+        status: "approved",
+        isScheduleBooking: true
+      });
+
+      // ✅ Update schedule count
+      schedule.currentBookings = (schedule.currentBookings || 0) + 1;
+      await schedule.save();
+
+      const populatedBooking = await Booking.findById(booking._id)
+        .populate("room", "roomName buildingNumber floorNumber department maxCapacity")
+        .populate("scheduledBy", "fullName username email");
+
+      return res.status(201).json({
+        success: true,
+        message: "Room booked successfully!",
+        data: populatedBooking,
+      });
+    }
+
+    // ✅ DIRECT BOOKING - Check conflicts
+    console.log('📝 Processing DIRECT booking...');
 
     // Validate required fields
     if (!room || !meetingDate || !startTime || !endTime || !numberOfGuests || !meetingTitle) {
@@ -61,7 +143,7 @@ router.post("/", protect, async (req, res) => {
       });
     }
 
-    // Check for overlapping bookings
+    // ✅ Check for overlapping bookings
     const meetingDateObj = new Date(meetingDate);
     const overlapping = await Booking.findOne({
       room,
@@ -91,6 +173,7 @@ router.post("/", protect, async (req, res) => {
       meetingTitle,
       notes: notes || "",
       status: "pending",
+      isScheduleBooking: false
     });
 
     // Update room status
@@ -126,7 +209,6 @@ router.put("/:id/status", protect, authorize("admin"), async (req, res) => {
     booking.status = status;
     await booking.save();
 
-    // Update room status if booking is rejected or cancelled
     if (status === "rejected" || status === "cancelled") {
       const room = await Room.findById(booking.room);
       if (room) {
@@ -164,15 +246,22 @@ router.put("/:id/cancel", protect, async (req, res) => {
       return res.status(404).json({ success: false, message: "Booking not found" });
     }
 
-    // Check if user owns booking or is admin
     if (req.user.role !== "admin" && booking.scheduledBy.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
+    // If this is a schedule booking, decrement schedule count
+    if (booking.isScheduleBooking && booking.scheduleId) {
+      const schedule = await Schedule.findById(booking.scheduleId);
+      if (schedule) {
+        schedule.currentBookings = Math.max(0, (schedule.currentBookings || 0) - 1);
+        await schedule.save();
+      }
     }
 
     booking.status = "cancelled";
     await booking.save();
 
-    // Update room status
     const room = await Room.findById(booking.room);
     if (room) {
       const activeBookings = await Booking.findOne({
@@ -191,6 +280,8 @@ router.put("/:id/cancel", protect, async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
+// Delete booking (Admin only)
 router.delete("/:id", protect, authorize("admin"), async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
@@ -201,7 +292,15 @@ router.delete("/:id", protect, authorize("admin"), async (req, res) => {
       });
     }
 
-    // Update room status if the booking was active
+    // If this is a schedule booking, decrement schedule count
+    if (booking.isScheduleBooking && booking.scheduleId) {
+      const schedule = await Schedule.findById(booking.scheduleId);
+      if (schedule) {
+        schedule.currentBookings = Math.max(0, (schedule.currentBookings || 0) - 1);
+        await schedule.save();
+      }
+    }
+
     if (booking.status === "pending" || booking.status === "approved") {
       const room = await Room.findById(booking.room);
       if (room) {

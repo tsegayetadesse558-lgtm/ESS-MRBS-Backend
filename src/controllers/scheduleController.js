@@ -1,4 +1,5 @@
 const Booking = require('../models/Booking');
+const Room = require('../models/Room');
 
 // Create a new schedule (admin only)
 exports.createSchedule = async (req, res) => {
@@ -12,13 +13,25 @@ exports.createSchedule = async (req, res) => {
       meetingTitle,
       scheduledBy,
       adminName,
+      roomData,
     } = req.body;
+
+    console.log('📝 Creating schedule:', { room, meetingDate, startTime, endTime });
 
     // Validate required fields
     if (!room || !meetingDate || !startTime || !endTime) {
       return res.status(400).json({
         success: false,
         message: 'Room, meeting date, start time, and end time are required',
+      });
+    }
+
+    // Check if room exists
+    const roomExists = await Room.findById(room);
+    if (!roomExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Room not found',
       });
     }
 
@@ -44,15 +57,25 @@ exports.createSchedule = async (req, res) => {
       meetingDate,
       startTime,
       endTime,
-      numberOfGuests: numberOfGuests || 0,
-      meetingTitle: meetingTitle || `Scheduled Meeting - ${adminName || 'Admin'}`,
-      adminName: adminName || 'Admin',
+      numberOfGuests: numberOfGuests || roomExists.maxCapacity,
+      meetingTitle: meetingTitle || `${roomExists.roomName} Meeting`,
+      adminName: adminName || req.user.fullName || req.user.username || 'Admin',
       scheduledBy: scheduledBy || req.user._id,
       scheduledByAdmin: true,
       status: 'scheduled',
       isSchedule: true,
       currentBookings: 0,
-      remainingCapacity: numberOfGuests || 0,
+      remainingCapacity: roomExists.maxCapacity,
+      roomData: roomData || {
+        _id: roomExists._id,
+        roomName: roomExists.roomName,
+        maxCapacity: roomExists.maxCapacity,
+        department: roomExists.department || 'N/A',
+        buildingNumber: roomExists.buildingNumber || 'N/A',
+        floorNumber: roomExists.floorNumber || 'N/A',
+        description: roomExists.description || '',
+        amenities: roomExists.amenities || [],
+      }
     };
 
     console.log('📝 Schedule data:', scheduleData);

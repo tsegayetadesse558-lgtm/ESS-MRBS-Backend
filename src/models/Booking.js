@@ -9,13 +9,20 @@ const BookingSchema = new mongoose.Schema(
       index: true
     },
 
+    // ✅ Link to schedule (reference only)
+    scheduleId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Schedule",
+      required: false,
+      index: true
+    },
+
     meetingDate: {
       type: Date,
       required: [true, "Meeting date is required"],
       index: true,
       validate: {
         validator: function(value) {
-          // Allow today's date and future dates only
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           const meetingDate = new Date(value);
@@ -43,6 +50,7 @@ const BookingSchema = new mongoose.Schema(
         "Please provide valid time in HH:MM format"
       ]
     },
+
     scheduledBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -65,22 +73,12 @@ const BookingSchema = new mongoose.Schema(
       default: "Meeting"
     },
 
-    adminName: {
-      type: String,
-      trim: true,
-      default: ""
-    },
-
-    scheduledByAdmin: {
-      type: Boolean,
-      default: false
-    },
-
     teaService: {
       type: Boolean,
       default: false,
       index: true
     },
+
     notes: {
       type: String,
       trim: true,
@@ -88,46 +86,23 @@ const BookingSchema = new mongoose.Schema(
       default: ""
     },
 
-<<<<<<< HEAD
-    /**
-     * Booking Status
-     * - pending: User booking waiting for approval
-     * - approved: User booking approved
-     * - scheduled: Admin created schedule/availability
-     * - rejected: Booking rejected
-     * - cancelled: Booking cancelled
-     */
-=======
->>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected', 'cancelled', 'scheduled'],
+      enum: ['pending', 'approved', 'rejected', 'cancelled'],
       default: 'pending',
       index: true
     },
 
-    /**
-     * Schedule specific fields
-     * isSchedule: True if this is an admin-created schedule (not a user booking)
-     * currentBookings: Number of users who have booked this schedule
-     * remainingCapacity: Remaining seats available
-     */
-    isSchedule: {
+    // ✅ Flag to identify if this booking is from a schedule
+    isScheduleBooking: {
       type: Boolean,
       default: false,
       index: true
     },
 
-    currentBookings: {
-      type: Number,
-      default: 0,
-      min: 0
-    },
-
-    remainingCapacity: {
-      type: Number,
-      default: 0,
-      min: 0
+    bookingReference: {
+      type: String,
+      required: false
     }
   },
   {
@@ -137,33 +112,27 @@ const BookingSchema = new mongoose.Schema(
   }
 );
 
+// Indexes
 BookingSchema.index({ meetingDate: 1, startTime: 1, endTime: 1 });
 BookingSchema.index({ room: 1, meetingDate: 1 });
 BookingSchema.index({ scheduledBy: 1 });
 BookingSchema.index({ createdAt: -1 });
-<<<<<<< HEAD
-BookingSchema.index({ status: 1, isSchedule: 1 });
+BookingSchema.index({ status: 1 });
+BookingSchema.index({ scheduleId: 1 });
 
-/**
- * Pre-save middleware - Validate time range and business rules
- */
-=======
->>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
+// Pre-save middleware - Validate time range
 BookingSchema.pre("save", async function (next) {
   try {
-    // Validate start time is before end time
     if (this.startTime >= this.endTime) {
       throw new Error("Start time must be before end time");
     }
 
-    // Calculate duration in minutes
     const startParts = this.startTime.split(':').map(Number);
     const endParts = this.endTime.split(':').map(Number);
     const startMinutes = startParts[0] * 60 + startParts[1];
     const endMinutes = endParts[0] * 60 + endParts[1];
     const duration = endMinutes - startMinutes;
 
-    // Minimum booking duration is 15 minutes
     if (duration < 15) {
       throw new Error("Meeting duration must be at least 15 minutes");
     }
@@ -173,6 +142,8 @@ BookingSchema.pre("save", async function (next) {
     next(error);
   }
 });
+
+// Pre-save middleware - Check for overlapping bookings
 BookingSchema.pre("save", async function (next) {
   try {
     // Skip overlap check if this is a status update only
@@ -182,14 +153,13 @@ BookingSchema.pre("save", async function (next) {
       return next();
     }
 
-    // Skip overlap check for schedules (they can overlap with bookings)
-    if (this.isSchedule) {
+    // ✅ Skip overlap check for schedule bookings
+    if (this.isScheduleBooking) {
       return next();
     }
 
     const Booking = mongoose.model("Booking");
 
-    // Check for overlapping bookings with proper time comparison
     const overlapping = await Booking.findOne({
       room: this.room,
       meetingDate: this.meetingDate,
@@ -213,17 +183,23 @@ BookingSchema.pre("save", async function (next) {
   }
 });
 
-BookingSchema.pre(/^find/, function(next) {
-  next();
-});
-
-BookingSchema.methods.getDurationMinutes = function () {
+// Virtuals
+BookingSchema.virtual("durationMinutes").get(function () {
   if (!this.startTime || !this.endTime) return 0;
   const startParts = this.startTime.split(':').map(Number);
   const endParts = this.endTime.split(':').map(Number);
   return (endParts[0] * 60 + endParts[1]) - (startParts[0] * 60 + startParts[1]);
-};
+});
 
+BookingSchema.virtual("durationHours").get(function () {
+  const minutes = this.durationMinutes;
+  if (minutes === 0) return "0h 0m";
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours}h ${mins}m`;
+});
+
+// Methods
 BookingSchema.methods.isActive = function () {
   return this.status === 'pending' || this.status === 'approved';
 };
@@ -232,18 +208,7 @@ BookingSchema.methods.canModify = function () {
   return this.status === 'pending';
 };
 
-BookingSchema.virtual("durationMinutes").get(function () {
-  return this.getDurationMinutes();
-});
-
-BookingSchema.virtual("durationHours").get(function () {
-  const minutes = this.getDurationMinutes();
-  if (minutes === 0) return "0h 0m";
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours}h ${mins}m`;
-});
-
+// Statics
 BookingSchema.statics.getByDate = function (date) {
   return this.find({
     meetingDate: new Date(date)
@@ -265,7 +230,7 @@ BookingSchema.statics.getPending = function () {
 };
 
 BookingSchema.statics.updateStatus = async function (bookingId, status) {
-  const validStatuses = ['pending', 'approved', 'rejected', 'cancelled', 'scheduled'];
+  const validStatuses = ['pending', 'approved', 'rejected', 'cancelled'];
   if (!validStatuses.includes(status)) {
     throw new Error('Invalid status');
   }
@@ -278,37 +243,5 @@ BookingSchema.statics.updateStatus = async function (bookingId, status) {
   booking.status = status;
   return booking.save();
 };
-
-BookingSchema.statics.checkAvailability = async function (roomId, date, startTime, endTime) {
-  const overlapping = await this.findOne({
-    room: roomId,
-    meetingDate: new Date(date),
-    status: { $nin: ['rejected', 'cancelled'] },
-    $or: [
-      {
-        startTime: { $lt: endTime },
-        endTime: { $gt: startTime }
-      }
-    ]
-  });
-  
-  return !overlapping;
-};
-
-BookingSchema.pre('validate', function(next) {
-  if (this.startTime && this.endTime && this.startTime >= this.endTime) {
-    this.invalidate('endTime', 'End time must be after start time');
-  }
-  next();
-});
-
-// Handle duplicate key errors gracefully
-BookingSchema.post('save', function(error, doc, next) {
-  if (error.code === 11000) {
-    next(new Error('This time slot is already booked for this room'));
-  } else {
-    next(error);
-  }
-});
 
 module.exports = mongoose.model("Booking", BookingSchema);
