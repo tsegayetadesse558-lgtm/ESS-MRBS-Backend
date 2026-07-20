@@ -126,10 +126,10 @@ Schedules
 
 ## Developers
 Haramaya University students
-Fediwak belay
-Tsagaye Tadase
-Lalise Jira
-Babso Batu
+Fediwak belay, 
+Tsagaye Tadasex, 
+Lalise Jira, 
+Babso Batu, 
 Developed for Ethiopian Statistical Service (ESS)
 
 2026
