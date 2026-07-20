@@ -1,0 +1,143 @@
+# ESS Meeting Room Booking System (ESS-MRBS) - Backend
+
+## Project Description
+
+The ESS Meeting Room Booking System (ESS-MRBS) is a web-based application developed for the Ethiopian Statistical Service (ESS). The system enables administrators to schedule meeting rooms and manage users, while registered users can view available schedules and book meeting rooms.
+
+---
+
+## Technologies Used
+
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
+- JWT Authentication
+- bcryptjs
+- Cookie Parser
+- CORS
+- Dotenv
+
+---
+
+## Tech Stack
+
+### Backend
+- Node.js
+- Express.js
+
+### Database
+- MongoDB
+
+### Authentication
+- JWT (JSON Web Token)
+
+### API Testing
+- Postman
+
+### Version Control
+- Git
+- GitHub
+
+---
+
+## Project Structure
+
+backend/
+│
+├── src/
+│ ├── config/
+│ ├── controllers/
+│ ├── middleware/
+│ ├── models/
+│ ├── routes/
+│ ├── utils/
+│ └── server.js
+│
+├── package.json
+├── package-lock.json
+├── .env
+└── README.md
+
+---
+
+## Installation
+
+Clone the repository
+
+```bash
+git clone https://github.com/tsegayetadesse558-lgtm/ESS-MRBS-Backend.git
+```
+
+Go to the backend folder
+
+```bash
+cd backend
+```
+
+Install dependencies
+
+```bash
+npm install
+```
+
+Create a .env file
+
+```env
+PORT=5000
+MONGO_URI=your_mongodb_connection
+JWT_SECRET=your_secret_key
+```
+
+Start the server
+
+```bash
+npm run dev
+```
+
+or
+
+```bash
+node src/server.js
+```
+
+---
+
+## API Endpoints
+
+Authentication
+
+- POST /api/auth/login
+- POST /api/auth/register
+
+Users
+
+- GET /api/users
+- POST /api/users
+
+Rooms
+
+- GET /api/rooms
+- POST /api/rooms
+
+Bookings
+
+- GET /api/bookings
+- POST /api/bookings
+
+Schedules
+
+- GET /api/schedules
+- POST /api/schedules
+
+---
+
+## Developers
+
+Computer Science Internship Project
+
+Haramaya University
+
+Developed for Ethiopian Statistical Service (ESS)
+
+2026
