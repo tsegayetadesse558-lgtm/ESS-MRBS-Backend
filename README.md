@@ -17,7 +17,6 @@ The ESS Meeting Room Booking System (ESS-MRBS) is a web-based application develo
 - Cookie Parser
 - CORS
 - Dotenv
-
 ---
 
 ## Tech Stack
@@ -45,6 +44,7 @@ The ESS Meeting Room Booking System (ESS-MRBS) is a web-based application develo
 ---
 ## Project Structure
 
+```
 backend/
 │
 ├── src/
@@ -58,13 +58,15 @@ backend/
 │
 ├── package.json
 ├── package-lock.json
----
+```
+
 
 ## Installation
 
 Clone the repository
-
+```bash
 git clone https://github.com/tsegayetadesse558-lgtm/ESS-MRBS-Backend.git
+```
 
 Go to the backend folder
 
@@ -72,7 +74,9 @@ cd backend
 
 Install dependencies
 
+```bash
 npm install
+```
 
 Create a .env file
 
@@ -84,7 +88,9 @@ JWT_SECRET=your_secret_key
 
 Start the server
 
+```bash
 npm run dev
+```
 
 ## API Endpoints
 
