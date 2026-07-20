@@ -58,7 +58,6 @@ backend/
 │
 ├── package.json
 ├── package-lock.json
-├── .env
 ---
 
 ## Installation
