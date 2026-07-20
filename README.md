@@ -43,7 +43,6 @@ The ESS Meeting Room Booking System (ESS-MRBS) is a web-based application develo
 | Git | Version control |
 | GitHub | Remote repository |
 ---
-
 ## Project Structure
 
 backend/
@@ -60,8 +59,6 @@ backend/
 ├── package.json
 ├── package-lock.json
 ├── .env
-└── README.md
-
 ---
 
 ## Installation
