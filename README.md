@@ -125,7 +125,7 @@ Schedules
 ---
 
 ## Developers
-Haramaya University students
+Haramaya University students: 
 Fediwak belay, 
 Tsagaye Tadase, 
 Lalise Jira, 
