@@ -85,7 +85,7 @@ Create a .env file
 
 ```env
 PORT=5000
-MONGO_URI=your_mongodb_connection
+MONGO_URI=mongodb://127.0.0.1:27017/ess_mrbs
 JWT_SECRET=your_secret_key
 ```
 
@@ -94,14 +94,6 @@ Start the server
 ```bash
 npm run dev
 ```
-
-or
-
-```bash
-node src/server.js
-```
-
----
 
 ## API Endpoints
 
@@ -133,11 +125,11 @@ Schedules
 ---
 
 ## Developers
-
-Computer Science Internship Project
-
-Haramaya University
-
+Haramaya University students
+Fediwak belay
+Tsagaye Tadase
+Lalise Jira
+Babso Batu
 Developed for Ethiopian Statistical Service (ESS)
 
 2026
