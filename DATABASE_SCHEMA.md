@@ -6,7 +6,7 @@ Users
 _id, 
 fullName, 
 username, 
-email, 
+email(optional), 
 password, 
 department, 
 role, 
