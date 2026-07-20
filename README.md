@@ -35,10 +35,13 @@ The ESS Meeting Room Booking System (ESS-MRBS) is a web-based application develo
 ### API Testing
 - Postman
 
-### Version Control
-- Git
-- GitHub
-
+### Development Tools
+| Tool | Purpose |
+|------|---------|
+| Visual Studio Code | Code editor |
+| Postman | API testing |
+| Git | Version control |
+| GitHub | Remote repository |
 ---
 
 ## Project Structure
