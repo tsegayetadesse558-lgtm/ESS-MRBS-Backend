@@ -35,12 +35,14 @@ The ESS Meeting Room Booking System (ESS-MRBS) is a web-based application develo
 ### API Testing
 - Postman
 
-### Version Control
-- Git
-- GitHub
-
+### Development Tools
+| Tool | Purpose |
+|------|---------|
+| Visual Studio Code | Code editor |
+| Postman | API testing |
+| Git | Version control |
+| GitHub | Remote repository |
 ---
-
 ## Project Structure
 
 backend/
@@ -57,51 +59,31 @@ backend/
 ├── package.json
 ├── package-lock.json
 ├── .env
-└── README.md
-
 ---
 
 ## Installation
 
 Clone the repository
 
-```bash
 git clone https://github.com/tsegayetadesse558-lgtm/ESS-MRBS-Backend.git
-```
 
 Go to the backend folder
 
-```bash
 cd backend
-```
 
 Install dependencies
 
-```bash
 npm install
-```
 
 Create a .env file
 
-```env
 PORT=5000
-MONGO_URI=your_mongodb_connection
+MONGO_URI=mongodb://127.0.0.1:27017/ess_mrbs
 JWT_SECRET=your_secret_key
-```
 
 Start the server
 
-```bash
 npm run dev
-```
-
-or
-
-```bash
-node src/server.js
-```
-
----
 
 ## API Endpoints
 
@@ -133,11 +115,12 @@ Schedules
 ---
 
 ## Developers
-
-Computer Science Internship Project
-
-Haramaya University
-
+Haramaya University students: 
+- Fediwak belay, 
+- Tsagaye Tadase, 
+- Lalise Jira, 
+- Babso Batu,
+  
 Developed for Ethiopian Statistical Service (ESS)
 
 2026
