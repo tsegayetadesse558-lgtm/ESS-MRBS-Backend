@@ -123,10 +123,10 @@ Schedules
 
 ## Developers
 Haramaya University students: 
-- Fediwak belay, 
-- Tsagaye Tadase, 
-- Lalise Jira, 
-- Babso Batu,
+- Fediwak belay,  => Backend Developer, API Integration
+- Tsagaye Tadase, => Backend Developer, Database Designer
+- Lalise Jira,    => Backend Developer, Database Administrator
+- Babso Batu,     => Backend Developer, Authentication System
   
 Developed for Ethiopian Statistical Service (ESS)
 
