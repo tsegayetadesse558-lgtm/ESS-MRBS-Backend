@@ -49,10 +49,11 @@ exports.register = async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        // ✅ FIXED COOKIE FOR PRODUCTION (CROSS-DOMAIN)
         res.cookie('token', token, {
             httpOnly: true,
-            secure: false,
-            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
@@ -130,10 +131,11 @@ exports.login = async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        // ✅ FIXED COOKIE FOR PRODUCTION (CROSS-DOMAIN)
         res.cookie('token', token, {
             httpOnly: true,
-            secure: false,
-            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
@@ -190,7 +192,11 @@ exports.getMe = async (req, res) => {
 
 // Logout
 exports.logout = (req, res) => {
-    res.clearCookie('token');
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    });
     res.status(200).json({
         success: true,
         message: 'Logged out successfully'
