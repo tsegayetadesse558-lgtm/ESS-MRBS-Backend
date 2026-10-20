@@ -1,7 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
-<<<<<<< HEAD
 /**
  * Authentication Middleware - Professional JWT Verification
  * 
@@ -9,8 +8,6 @@ const User = require("../models/User");
  * It extracts the token from cookies, verifies its validity,
  * and attaches the user to the request object.
  */
-=======
->>>>>>> 8d55e317b20b200268f987d3aa347f843a13c2f8
 const protect = async (req, res, next) => {
   try {
     let token;

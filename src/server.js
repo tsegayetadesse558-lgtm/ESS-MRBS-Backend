@@ -11,33 +11,48 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const roomRoutes = require("./routes/roomRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
-const scheduleRoutes = require("./routes/scheduleRoutes");
 
 const app = express();
 connectDB();
 
-// ✅ DYNAMIC CORS - Allows any localhost port
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    // Allow any localhost port for development
-    if (origin.match(/^http:\/\/localhost:\d+$/)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// ✅ PRODUCTION CORS — allows localhost + Vercel + CLIENT_URL
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  process.env.CLIENT_URL, // e.g. https://your-app.vercel.app
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin (Postman, curl, mobile apps)
+      if (!origin) return callback(null, true);
+
+      const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
+      const isVercel = /\.vercel\.app$/.test(origin);
+      const isAllowed = isLocalhost || isVercel || allowedOrigins.includes(origin);
+
+      if (isAllowed) {
+        return callback(null, true);
+      }
+      console.warn(`❌ CORS blocked: ${origin}`);
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+// ✅ Handle preflight requests explicitly (prevents 404 on OPTIONS)
+app.options("*", cors());
 
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ---------- Health & test ----------
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -45,7 +60,7 @@ app.get("/api/health", (req, res) => {
     message: "Server is running",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV || "development"
+    environment: process.env.NODE_ENV || "development",
   });
 });
 
@@ -53,16 +68,17 @@ app.get("/api/test", (req, res) => {
   res.status(200).json({
     success: true,
     message: "API is working!",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
+// ---------- Routes ----------
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/bookings", bookingRoutes);
-app.use("/api/schedules", scheduleRoutes);
 
+// ---------- Root ----------
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
@@ -73,13 +89,13 @@ app.get("/", (req, res) => {
       users: "/api/users",
       rooms: "/api/rooms",
       bookings: "/api/bookings",
-      schedules: "/api/schedules",
       health: "/api/health",
-      test: "/api/test"
+      test: "/api/test",
     },
   });
 });
 
+// ---------- 404 ----------
 app.use((req, res) => {
   console.log(`❌ Route not found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({
@@ -88,6 +104,7 @@ app.use((req, res) => {
   });
 });
 
+// ---------- Error handler ----------
 app.use((err, req, res, next) => {
   console.error("Server Error:", err);
   res.status(500).json({
@@ -96,6 +113,7 @@ app.use((err, req, res, next) => {
   });
 });
 
+// ---------- Start ----------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

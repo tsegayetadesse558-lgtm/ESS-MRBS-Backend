@@ -10,14 +10,16 @@ const {
 } = require("../controllers/roomController");
 const { protect, authorize } = require("../middleware/auth");
 
-// Public (authenticated) routes
+// Stats must come BEFORE /:id
+router.get("/stats", protect, authorize("admin"), getRoomStats);
+
+// Authenticated routes
 router.get("/", protect, getRooms);
 router.get("/:id", protect, getRoom);
 
-// Admin only routes
+// Admin-only routes
 router.post("/", protect, authorize("admin"), createRoom);
 router.put("/:id", protect, authorize("admin"), updateRoom);
 router.delete("/:id", protect, authorize("admin"), deleteRoom);
-router.get("/stats", protect, authorize("admin"), getRoomStats);
 
 module.exports = router;
