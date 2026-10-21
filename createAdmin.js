@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
 const dotenv = require("dotenv");
 const path = require("path");
 
@@ -11,21 +10,20 @@ async function createAdmin() {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("✅ Connected to MongoDB");
 
-    const existing = await User.findOne({ username: "admin" });
-    if (existing) {
-      console.log("✅ Admin already exists");
-      console.log("📝 Username:", existing.username);
-      process.exit(0);
-    }
+    // 1. Delete existing admin to ensure a clean slate
+    await User.deleteMany({ username: "admin" });
+    console.log("🧹 Cleared old admin user");
 
-    const hashedPassword = await bcrypt.hash("admin123", 10);
+    // 2. Create new admin
+    // ⚠️ NOTE: We pass the PLAIN password here. 
+    // Your User model will automatically hash it before saving.
     const admin = new User({
       fullName: "System Administrator",
       username: "admin",
       email: "admin@ess.com",
-      department: "Director Office",  // ✅ FIXED: Changed from "IT"
+      department: "Director Office",
       role: "admin",
-      password: hashedPassword,
+      password: "admin123",
       status: "active"
     });
 
