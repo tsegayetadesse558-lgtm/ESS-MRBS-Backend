@@ -51,6 +51,17 @@ const BookingSchema = new mongoose.Schema(
       default: "confirmed",
       index: true,
     },
+    // ✅ SEPARATED SOFT DELETE FLAGS
+    isHiddenFromUser: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    isHiddenFromAdmin: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -61,7 +72,7 @@ const BookingSchema = new mongoose.Schema(
 
 // ---------- Indexes ----------
 BookingSchema.index({ room: 1, meetingDate: 1, startTime: 1, endTime: 1 });
-BookingSchema.index({ user: 1 });
+BookingSchema.index({ user: 1, isHiddenFromUser: 1 });
 BookingSchema.index({ meetingDate: 1, startTime: 1 });
 BookingSchema.index({ status: 1 });
 

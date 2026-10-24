@@ -10,7 +10,6 @@ const {
   getBookingStats,
 } = require("../controllers/bookingController");
 
-// All routes require authentication
 router.use(protect);
 
 // ---------- Stats must be BEFORE /:id ----------
@@ -20,10 +19,11 @@ router.get("/stats", authorize("admin"), getBookingStats);
 router.route("/").get(getBookings).post(createBooking);
 
 // ---------- Single ----------
+// ✅ Removed authorize("admin") so Registered Users can delete their own history
 router
   .route("/:id")
   .get(getBooking)
-  .delete(authorize("admin"), deleteBooking);
+  .delete(deleteBooking);
 
 // ---------- Cancel ----------
 router.put("/:id/cancel", cancelBooking);
